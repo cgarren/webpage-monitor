@@ -14,7 +14,7 @@ URL = "https://www.bestbuy.com/site/sony-wh-1000xm4-wireless-noise-cancelling-ov
 INTERVAL = 10
 
 
-GOOGLE_OAUTH2_CREDENTIALS = 'price-checker-372020-936ffa9892bd.json'
+GOOGLE_OAUTH2_CREDENTIALS = 'credentials.json'
 GOOGLE_SPREADSHEET_NAME = 'price_tracker'
 
 def open_sheet(GOOGLE_OAUTH2_CREDENTIALS, GOOGLE_SPREADSHEET_NAME):
