@@ -1,14 +1,40 @@
 # imports
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import time
 import requests
 from bs4 import BeautifulSoup
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+import sys
 
 # set the url
 URL = "https://www.bestbuy.com/site/sony-wh-1000xm4-wireless-noise-cancelling-over-the-ear-headphones-black/6408356.p?skuId=6408356"
 
 # set the fetching interval in seconds
 INTERVAL = 10
+
+
+GOOGLE_OAUTH2_CREDENTIALS = 'price-checker-372020-936ffa9892bd.json'
+GOOGLE_SPREADSHEET_NAME = 'price_tracker'
+
+def open_sheet(GOOGLE_OAUTH2_CREDENTIALS, GOOGLE_SPREADSHEET_NAME):
+    try: 
+        print('Logging into Google Sheet...')
+        scope = ['https://spreadsheets.google.com/feeds',
+                'https://www.googleapis.com/auth/drive']
+        credentials = ServiceAccountCredentials.from_json_keyfile_name(
+            GOOGLE_OAUTH2_CREDENTIALS, scope)
+        gc = gspread.authorize(credentials)
+        for s in gc.openall():
+            print(s.title)
+        worksheet = gc.open(GOOGLE_SPREADSHEET_NAME).sheet1
+        print('Login successful.')
+        return worksheet
+    except Exception as ex:
+        print('Unable to login and get spreadsheet. Check OAuth credentials, spreadsheet name, and')
+        print('make sure spreadsheet is shared to the client_email address in the OAuth .json file!')
+        print('Google sheet login failed with error:', ex)
+        sys.exit(1)
 
 
 def extractPageData(url):  # get beutiful soup data from url
@@ -39,11 +65,32 @@ def main():  # kickoff code
     while True:
         # log the starting time
         past_time = datetime.now()
+        now = datetime.now()
+        today = date.today()
+        currentTime = now.strftime("%H:%M:%S")
 
+        worksheet = None # set to None to force reload on first call
         ### BUSINESS LOGIC HERE ###
-        print("Updated Price:", checkPriceBestBuy(URL))
+        print("Updated Price:", checkPriceBestBuy(URL), "Date", today, "Time", currentTime)
 
-        # sleep for the interval
+        # Open Google Sheet
+        worksheet = open_sheet(GOOGLE_OAUTH2_CREDENTIALS, GOOGLE_SPREADSHEET_NAME)
+        try:
+            previous_row = len(list(filter(None , worksheet.col_values(1))))
+            max_row = len(worksheet.get_all_values())
+            if previous_row < max_row:
+                worksheet.update_acell("A{}".format(previous_row), checkPriceBestBuy(URL))
+                worksheet.update_acell("B{}".format(previous_row), today)
+                worksheet.update_acell("C{}".format(previous_row), currentTime)
+            else:
+                data_line = [str(checkPriceBestBuy(URL)), str(today), currentTime]
+                worksheet.append_row(data_line)
+                print("appended row")
+        except:
+            print("Error writing to Google Sheet")
+            worksheet = None
+
+        # sleep for the interval    
         time_delta = datetime.now() - past_time
         if time_delta < timedelta(seconds=INTERVAL):
             time.sleep(INTERVAL)
