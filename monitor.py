@@ -86,13 +86,15 @@ def main():  # kickoff code
         try:
             previous_row = len(list(filter(None , worksheet.col_values(1))))
             max_row = len(worksheet.get_all_values())
+
+            #Check if spreadsheet is empty
             if previous_row < max_row:
                 worksheet.update_acell("A{}".format(previous_row), getProductTitle(URL))
                 worksheet.update_acell("B{}".format(previous_row), checkPriceBestBuy(URL))
                 worksheet.update_acell("C{}".format(previous_row), today)
                 worksheet.update_acell("D{}".format(previous_row), currentTime)
             else:
-                data_line = [str(getProductTitle(URL)), str(checkPriceBestBuy(URL)), str(today), currentTime]
+                data_line = [str(getProductTitle(URL)), str(checkPriceBestBuy(URL)), str(today), currentTime, URL]
                 worksheet.append_row(data_line)
                 print("appended row")
         except:
