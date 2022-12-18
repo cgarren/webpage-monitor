@@ -93,6 +93,7 @@ def main():  # kickoff code
                 worksheet.update_acell("B{}".format(previous_row), checkPriceBestBuy(URL))
                 worksheet.update_acell("C{}".format(previous_row), today)
                 worksheet.update_acell("D{}".format(previous_row), currentTime)
+                worksheet.update_acell("E{}".format(previous_row), URL)
             else:
                 data_line = [str(getProductTitle(URL)), str(checkPriceBestBuy(URL)), str(today), currentTime, URL]
                 worksheet.append_row(data_line)
