@@ -31,8 +31,6 @@ def open_sheet(GOOGLE_OAUTH2_CREDENTIALS, GOOGLE_SPREADSHEET_NAME):
         print('Login successful.')
         return worksheet
     except Exception as ex:
-        print('Unable to login and get spreadsheet. Check OAuth credentials, spreadsheet name, and')
-        print('make sure spreadsheet is shared to the client_email address in the OAuth .json file!')
         print('Google sheet login failed with error:', ex)
         sys.exit(1)
 
