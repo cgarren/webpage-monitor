@@ -25,8 +25,6 @@ def open_sheet(GOOGLE_OAUTH2_CREDENTIALS, GOOGLE_SPREADSHEET_NAME):
         credentials = ServiceAccountCredentials.from_json_keyfile_name(
             GOOGLE_OAUTH2_CREDENTIALS, scope)
         gc = gspread.authorize(credentials)
-        for s in gc.openall():
-            print(s.title)
         worksheet = gc.open(GOOGLE_SPREADSHEET_NAME).sheet1
         print('Login successful.')
         return worksheet
@@ -53,6 +51,17 @@ def checkPriceBestBuy(url):  # extract price for Best Buy page contents
         price = tag.get_text()
     return price
 
+def getProductTitle(url):
+    soup = extractPageData(url)
+    title_div = soup.find("div", {"class": "sku-title"})
+    title = ""
+    for tag in title_div.contents:
+        if 'class' in tag.attrs and "sr-only" in tag['class']:
+            continue
+        title = tag.get_text()
+    return title
+
+
 
 def writeSoupToFile(soup):  # write page contents to file for data extraction or debugging
     with open("soup.html", "w") as file:
@@ -70,6 +79,7 @@ def main():  # kickoff code
         worksheet = None # set to None to force reload on first call
         ### BUSINESS LOGIC HERE ###
         print("Updated Price:", checkPriceBestBuy(URL), "Date", today, "Time", currentTime)
+        print("Product Title:", getProductTitle(URL))
 
         # Open Google Sheet
         worksheet = open_sheet(GOOGLE_OAUTH2_CREDENTIALS, GOOGLE_SPREADSHEET_NAME)
