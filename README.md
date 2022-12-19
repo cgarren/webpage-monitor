@@ -6,4 +6,4 @@ A script which periodically checks for updated prices on a webpage
 
 [Project write up](https://docs.google.com/document/d/1pebVoNbn5g2QY_ogPkKacUup7BE6UY0EOC3faKMILbE/edit)
 
-[Demo video]()
+[Demo video](https://youtu.be/0PRQjuPAZVU)
