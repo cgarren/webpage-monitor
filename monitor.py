@@ -16,22 +16,27 @@ URL = "https://www.bestbuy.com/site/sony-wh-1000xm4-wireless-noise-cancelling-ov
 # set the fetching interval in seconds
 INTERVAL = 10
 
-RECEIVING_ADDRESSES = ['cgarren18@icloud.com']
+# sends an email regardless of price change if set to True
+TEST_EMAIL = False
 
-GOOGLE_OAUTH2_CREDENTIALS = 'credentials.json'
+# list of email addresses to send to
+RECEIVING_ADDRESSES = ['']
+
+# credentials file name
+CREDENTIALS_FILE = 'credentials.json'
+
+# name of Google sheet to write to
 GOOGLE_SPREADSHEET_NAME = 'price_tracker'
 
 
-def open_sheet(GOOGLE_OAUTH2_CREDENTIALS, GOOGLE_SPREADSHEET_NAME):
+def open_sheet():
     try:
-        print('Logging into Google Sheet...')
         scope = ['https://spreadsheets.google.com/feeds',
                  'https://www.googleapis.com/auth/drive']
         credentials = ServiceAccountCredentials.from_json_keyfile_name(
-            GOOGLE_OAUTH2_CREDENTIALS, scope)
+            CREDENTIALS_FILE, scope)
         gc = gspread.authorize(credentials)
         worksheet = gc.open(GOOGLE_SPREADSHEET_NAME).sheet1
-        print('Login successful.')
         return worksheet
     except Exception as ex:
         print('Google sheet login failed with error:', ex)
@@ -57,7 +62,7 @@ def checkPriceBestBuy(url):  # extract price for Best Buy page contents
     return price
 
 
-def getProductTitle(url):
+def getProductTitleBestBuy(url):  # extract title for Best Buy page contents
     soup = extractPageData(url)
     title_div = soup.find("div", {"class": "sku-title"})
     title = ""
@@ -90,6 +95,7 @@ def writeSoupToFile(soup):  # write page contents to file for data extraction or
         file.write(str(soup))
 
 
+# Compare old and new prices to see if they are different
 def didPriceChange(worksheet, current_product_price):
     max_row = len(worksheet.get_all_values())
     if worksheet.cell(max_row, 2).value != current_product_price:
@@ -98,7 +104,30 @@ def didPriceChange(worksheet, current_product_price):
         return False
 
 
+# Update spreadsheet with new values
+def updateSpreadsheet(worksheet, current_product_price, current_product_title, today, currentTime, url):
+    previous_row = len(list(filter(None, worksheet.col_values(1))))
+    max_row = len(worksheet.get_all_values())
+
+    # Check if spreadsheet is empty
+    if previous_row < max_row:
+        worksheet.update_acell("A{}".format(
+            previous_row), current_product_title)
+        worksheet.update_acell("B{}".format(
+            previous_row), current_product_price)
+        worksheet.update_acell("C{}".format(previous_row), today)
+        worksheet.update_acell("D{}".format(previous_row), currentTime)
+        worksheet.update_acell("E{}".format(previous_row), url)
+    else:
+        data_line = [str(current_product_title), str(
+            current_product_price), str(today), currentTime, url]
+        worksheet.append_row(data_line)
+
+
 def main():  # kickoff code
+    current_product_title = getProductTitleBestBuy(URL)
+    print("Product:", current_product_title)
+
     while True:
         # log the starting time
         past_time = datetime.now()
@@ -109,43 +138,26 @@ def main():  # kickoff code
         worksheet = None  # set to None to force reload on first call
 
         current_product_price = checkPriceBestBuy(URL)
-        current_product_title = getProductTitle(URL)
 
         print("Updated Price:", current_product_price,
-              "Date", today, "Time", currentTime)
-        print("Product Title:", current_product_title)
+              "at", currentTime, today)
 
         # Open Google Sheet
-        worksheet = open_sheet(GOOGLE_OAUTH2_CREDENTIALS,
-                               GOOGLE_SPREADSHEET_NAME)
+        worksheet = open_sheet()
 
         try:
             # Check if price has changed
-            if didPriceChange(worksheet, current_product_price):
+            if didPriceChange(worksheet, current_product_price) or TEST_EMAIL:
                 sendEmail(current_product_title, current_product_price)
                 print("Email sent")
         except:
             print("Error sending email")
 
         try:
-            # Update spreadsheet with new value
-            previous_row = len(list(filter(None, worksheet.col_values(1))))
-            max_row = len(worksheet.get_all_values())
-
-            # Check if spreadsheet is empty
-            if previous_row < max_row:
-                worksheet.update_acell("A{}".format(
-                    previous_row), current_product_title)
-                worksheet.update_acell("B{}".format(
-                    previous_row), current_product_price)
-                worksheet.update_acell("C{}".format(previous_row), today)
-                worksheet.update_acell("D{}".format(previous_row), currentTime)
-                worksheet.update_acell("E{}".format(previous_row), URL)
-            else:
-                data_line = [str(current_product_title), str(
-                    current_product_price), str(today), currentTime, URL]
-                worksheet.append_row(data_line)
-                print("appended row")
+            # Update spreadsheet with new values
+            updateSpreadsheet(worksheet, current_product_price,
+                              current_product_title, today, currentTime, URL)
+            print("Spreadsheet updated")
         except:
             print("Error writing to Google Sheet")
             worksheet = None
