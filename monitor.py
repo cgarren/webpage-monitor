@@ -17,7 +17,7 @@ URL = "https://www.bestbuy.com/site/sony-wh-1000xm4-wireless-noise-cancelling-ov
 INTERVAL = 10
 
 # sends an email regardless of price change if set to True
-TEST_EMAIL = False
+TEST_EMAIL = True
 
 # list of email addresses to send to
 RECEIVING_ADDRESSES = ['']
@@ -88,11 +88,6 @@ def sendEmail(product_name, product_price):
         connection.send_message(
             from_addr=data['sending_email'], to_addrs=RECEIVING_ADDRESSES, msg=msg)
     connection.close()
-
-
-def writeSoupToFile(soup):  # write page contents to file for data extraction or debugging
-    with open("soup.html", "w") as file:
-        file.write(str(soup))
 
 
 # Compare old and new prices to see if they are different
